@@ -18,29 +18,44 @@ void processInput(GLFWwindow *window)
 const unsigned int WIDTH = 600;
 const unsigned int HEIGHT = 600;
 
-bool pyramid(GLFWwindow *window)
+bool pyramid(GLFWwindow *window, int n)
 {
     Shader myShader("./vector_shader.vs", "./fragment_shader.fs");
 
-    int n = 9;
+    int Total[] = {n, 0};
     // setting up vertices
-    float vertices[3 * n];
-    for (int i = 0; i < n; ++i)
+    float vertices[6 * n];
+    for (int i = 0; i < 2 * n; ++i)
     {
-        float x = cosf(2 * M_PI * i / n);
-        float y = sinf(2 * M_PI * i / n);
+        float x = cosf(2 * M_PI * i / n) / 1.414 + (i < n ? 1 : -1) * 0.4 / 1.414;
+        // float y = sinf(2 * M_PI * i / n) / 1.414 + (i < n ? 0.2 : -0.2);
+        float y = sinf(2 * M_PI * i / n) / 1.414;
+        float z = -cosf(2 * M_PI * i / n) / 1.414 + (i < n ? 1 : -1) * 0.4 / 1.414;
         vertices[3 * i] = x;
         vertices[3 * i + 1] = y;
-        vertices[3 * i + 2] = 0.0f;
+        vertices[3 * i + 2] = -z;
     }
     // setting up indices list for each triangle, start with 0, and next 2 indices for next triangle
-    unsigned int indices[3 * (n - 2)];
-    for (int i = 0; i < n - 2; ++i)
+    unsigned int indices[6 * (2 * n - 2)];
+    // front and back faces
+    for (int i = 0; i < 2 * n - 4; ++i)
     {
-        indices[3 * i] = 0;
-        indices[3 * i + 1] = i + 1;
-        indices[3 * i + 2] = i + 2;
+        indices[3 * i] = i < n - 2 ? 0 : n;
+        indices[3 * i + 1] = i < n - 2 ? (i + 1) : (i + 3);
+        indices[3 * i + 2] = i < n - 2 ? (i + 2) : (i + 4);
     }
+    // side rectangles
+    for (int i = 0; i < n; ++i)
+    {
+        indices[3 * (2 * n - 4) + 6 * i] = i;
+        indices[3 * (2 * n - 4) + 6 * i + 1] = n + i;
+        indices[3 * (2 * n - 4) + 6 * i + 2] = n + (n + i + 1) % n;
+        indices[3 * (2 * n - 4) + 6 * i + 3] = i;
+        indices[3 * (2 * n - 4) + 6 * i + 4] = (i + 1) % n;
+        indices[3 * (2 * n - 4) + 6 * i + 5] = n + (n + i + 1) % n;
+    }
+    for (auto &i : indices)
+        std::cout << i << '\n';
 
     unsigned int VBO, VAO, EBO;
     glGenVertexArrays(1, &VAO);
@@ -61,6 +76,8 @@ bool pyramid(GLFWwindow *window)
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
     while (not glfwWindowShouldClose(window))
     {
         processInput(window);
@@ -70,8 +87,8 @@ bool pyramid(GLFWwindow *window)
 
         myShader.use();
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 3 * n, GL_UNSIGNED_INT, 0);
-        // type of element is triangle, 3*n elements in vertices, indices is of uint type, 0 is pointer to indices
+        glDrawElements(GL_TRIANGLES, 12 * n, GL_UNSIGNED_INT, 0);
+        // type of element is triangle, 12*n elements in vertices, indices is of uint type, 0 is pointer to indices
 
         glfwSwapBuffers(window); // rendering window
         glfwPollEvents();        // updating window
@@ -110,7 +127,7 @@ int main(int argc, char **argv)
         return false;
     }
 
-    if (not pyramid(window))
+    if (not pyramid(window, atoi(argv[1])))
     {
         return -1;
     }
