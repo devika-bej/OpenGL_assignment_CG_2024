@@ -24,16 +24,19 @@ bool pyramid(GLFWwindow *window, int n)
 
     int Total[] = {n, 0};
     // setting up vertices
-    float vertices[6 * n];
+    float vertices[12 * n];
     for (int i = 0; i < 2 * n; ++i)
     {
         float x = cosf(2 * M_PI * i / n) / 1.414 + (i < n ? 1 : -1) * 0.4 / 1.414;
         // float y = sinf(2 * M_PI * i / n) / 1.414 + (i < n ? 0.2 : -0.2);
         float y = sinf(2 * M_PI * i / n) / 1.414;
         float z = -cosf(2 * M_PI * i / n) / 1.414 + (i < n ? 1 : -1) * 0.4 / 1.414;
-        vertices[3 * i] = x;
-        vertices[3 * i + 1] = y;
-        vertices[3 * i + 2] = -z;
+        vertices[6 * i] = x;
+        vertices[6 * i + 1] = y;
+        vertices[6 * i + 2] = -z;
+        vertices[6 * i + 3] = (float)rand() / RAND_MAX;
+        vertices[6 * i + 4] = (float)rand() / RAND_MAX;
+        vertices[6 * i + 5] = (float)rand() / RAND_MAX;
     }
     // setting up indices list for each triangle, start with 0, and next 2 indices for next triangle
     unsigned int indices[6 * (2 * n - 2)];
@@ -54,8 +57,6 @@ bool pyramid(GLFWwindow *window, int n)
         indices[3 * (2 * n - 4) + 6 * i + 4] = (i + 1) % n;
         indices[3 * (2 * n - 4) + 6 * i + 5] = n + (n + i + 1) % n;
     }
-    for (auto &i : indices)
-        std::cout << i << '\n';
 
     unsigned int VBO, VAO, EBO;
     glGenVertexArrays(1, &VAO);
@@ -69,14 +70,17 @@ bool pyramid(GLFWwindow *window, int n)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
     // index = 0, size = 3, float type, dont normalize, since each attribute is x,y,z therefore stride = 3*size of float, type of draw = static
     glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     while (not glfwWindowShouldClose(window))
     {
