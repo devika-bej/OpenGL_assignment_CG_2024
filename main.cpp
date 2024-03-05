@@ -7,6 +7,8 @@
 #include <thread>
 
 bool prismOrPyramid = true;
+float objectTranslate[3] = {0, 0, 0};
+bool rotateShape = false;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
@@ -15,10 +17,31 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 
 void processInput(GLFWwindow *window)
 {
+    // close window
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
+    // toggle between prism and pyramid
     if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
         prismOrPyramid = not prismOrPyramid;
+
+    // up (up key), down (down key), left (left key), right (right key), near (n key), far (f key)
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+        objectTranslate[1] += 0.1;
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        objectTranslate[1] -= 0.1;
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+        objectTranslate[0] -= 0.1;
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+        objectTranslate[0] += 0.1;
+    if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS)
+        objectTranslate[2] -= 0.1;
+    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+        objectTranslate[2] += 0.1;
+
+    // rotate about z axis or y axis (will decide later)
+    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+        rotateShape = true;
 }
 
 const unsigned int WIDTH = 600;
@@ -28,71 +51,6 @@ bool pyramid(GLFWwindow *window, int n)
 {
     Shader myShader("./vector_shader.vs", "./fragment_shader.fs");
 
-    // setting up vertices
-    float verticesPrism[12 * n];
-    float verticesPyramid[6 * (n + 1)];
-
-    for (int i = 0; i < 2 * n; ++i)
-    {
-        float x = cosf(2 * M_PI * i / n) / 1.414 + (i < n ? 1 : -1) * 0.4 / 1.414;
-        float y = sinf(2 * M_PI * i / n) / 1.414;
-        float z = -cosf(2 * M_PI * i / n) / 1.414 + (i < n ? 1 : -1) * 0.4 / 1.414;
-        verticesPrism[6 * i] = x;
-        verticesPrism[6 * i + 1] = y;
-        verticesPrism[6 * i + 2] = -z;
-        verticesPrism[6 * i + 3] = i < n ? i < n / 2 ? i * 1.0 / n : 1 - i * 1.0 / n : 1;
-        verticesPrism[6 * i + 4] = i < n ? 0 : i < 3.0 * n / 2 ? i * 1.0 / n
-                                                               : 1 - i * 1.0 / n;
-        verticesPrism[6 * i + 5] = i < n ? i < n / 2 ? i * 1.0 / n : 1 - i * 1.0 / n : 1;
-    }
-
-    for (int i = 0; i < n; ++i)
-    {
-        float x = cosf(2 * M_PI * i / n) / 1.414 + 0.4 / 1.414;
-        float y = sinf(2 * M_PI * i / n) / 1.414;
-        float z = -cosf(2 * M_PI * i / n) / 1.414 + 0.4 / 1.414;
-        verticesPyramid[6 * i] = x;
-        verticesPyramid[6 * i + 1] = y;
-        verticesPyramid[6 * i + 2] = -z;
-        verticesPyramid[6 * i + 3] = i < n / 2 ? i * 1.0 / n : 1 - i * 1.0 / n;
-        verticesPyramid[6 * i + 4] = 0;
-        verticesPyramid[6 * i + 5] = i < n / 2 ? i * 1.0 / n : 1 - i * 1.0 / n;
-    }
-    verticesPyramid[6 * (n)] = -0.4 / 1.414;
-    verticesPyramid[6 * (n) + 1] = 0;
-    verticesPyramid[6 * (n) + 2] = -0.6 / 1.414;
-    verticesPyramid[6 * (n) + 3] = 1;
-    verticesPyramid[6 * (n) + 4] = 1;
-    verticesPyramid[6 * (n) + 5] = 1;
-    // setting up indices list for each triangle, start with 0, and next 2 indices for next triangle
-    unsigned int indicesPrism[6 * (n - 2) + 6 * n];
-    unsigned int indicesPyramid[6 * (n - 2) + 3 * n];
-    // front and back faces
-    for (int i = 0; i < 2 * n - 4; ++i)
-    {
-        indicesPrism[3 * i] = i < n - 2 ? 0 : n;
-        indicesPrism[3 * i + 1] = i < n - 2 ? (i + 1) : (i + 3);
-        indicesPrism[3 * i + 2] = i < n - 2 ? (i + 2) : (i + 4);
-        indicesPyramid[3 * i] = i < n - 2 ? 0 : n;
-        indicesPyramid[3 * i + 1] = i < n - 2 ? (i + 1) : (i + 3);
-        indicesPyramid[3 * i + 2] = i < n - 2 ? (i + 2) : (i + 4);
-    }
-    // sides
-    for (int i = 0; i < n; ++i)
-    {
-        indicesPrism[3 * (2 * n - 4) + 6 * i] = i;
-        indicesPrism[3 * (2 * n - 4) + 6 * i + 1] = n + i;
-        indicesPrism[3 * (2 * n - 4) + 6 * i + 2] = n + (n + i + 1) % n;
-        indicesPrism[3 * (2 * n - 4) + 6 * i + 3] = i;
-        indicesPrism[3 * (2 * n - 4) + 6 * i + 4] = (i + 1) % n;
-        indicesPrism[3 * (2 * n - 4) + 6 * i + 5] = n + (n + i + 1) % n;
-        indicesPyramid[3 * (2 * n - 4) + 3 * i] = n;
-        indicesPyramid[3 * (2 * n - 4) + 3 * i + 1] = i;
-        indicesPyramid[3 * (2 * n - 4) + 3 * i + 2] = (i + 1) % n;
-    }
-
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
     while (not glfwWindowShouldClose(window))
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -101,35 +59,26 @@ bool pyramid(GLFWwindow *window, int n)
         glClearColor(0.5569, 0.569, 0.56, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        myShader.use();
+
+        int rotationVecLoc = glGetUniformLocation(myShader.id, "objectTranslate");
+        glUniform3f(rotationVecLoc, objectTranslate[0], objectTranslate[1], objectTranslate[2]);
+
+        float vertices[18] = {0.5, 0.5, 0.5, 1, 1, 0, 0.5, -0.5, 0.5, 0, 0, 1, -0.5, 0, 0, 1, 0, 1};
+        unsigned int indices[3] = {2, 0, 1};
+
         unsigned int VBOprism, VAOprism, EBOprism;
-        unsigned int VBOpyramid, VAOpyramid, EBOpyramid;
 
-        if (prismOrPyramid)
-        {
-            glGenVertexArrays(1, &VAOprism);
-            glGenBuffers(1, &VBOprism);
-            glGenBuffers(1, &EBOprism);
-            glBindVertexArray(VAOprism);
+        glGenVertexArrays(1, &VAOprism);
+        glGenBuffers(1, &VBOprism);
+        glGenBuffers(1, &EBOprism);
+        glBindVertexArray(VAOprism);
 
-            glBindBuffer(GL_ARRAY_BUFFER, VBOprism);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(verticesPrism), verticesPrism, GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, VBOprism);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOprism);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicesPrism), indicesPrism, GL_STATIC_DRAW);
-        }
-        else
-        {
-            glGenVertexArrays(1, &VAOpyramid);
-            glGenBuffers(1, &VBOpyramid);
-            glGenBuffers(1, &EBOpyramid);
-            glBindVertexArray(VAOpyramid);
-
-            glBindBuffer(GL_ARRAY_BUFFER, VBOpyramid);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(verticesPyramid), verticesPyramid, GL_STATIC_DRAW);
-
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOpyramid);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicesPyramid), indicesPyramid, GL_STATIC_DRAW);
-        }
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOprism);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
         glEnableVertexAttribArray(0);
@@ -137,20 +86,8 @@ bool pyramid(GLFWwindow *window, int n)
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)(3 * sizeof(float)));
         glEnableVertexAttribArray(1);
 
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-
-        myShader.use();
-        if (prismOrPyramid)
-        {
-            glBindVertexArray(VAOprism);
-            glDrawElements(GL_TRIANGLES, 12 * n, GL_UNSIGNED_INT, 0);
-        }
-        else
-        {
-            glBindVertexArray(VAOpyramid);
-            glDrawElements(GL_TRIANGLES, 6 * (n + 1), GL_UNSIGNED_INT, 0);
-        }
+        glBindVertexArray(VAOprism);
+        glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_INT, 0);
 
         glDeleteVertexArrays(1, &VAOprism);
         glDeleteBuffers(1, &VBOprism);
