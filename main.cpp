@@ -47,10 +47,12 @@ void processInput(GLFWwindow *window)
         rotateShape = not rotateShape;
 }
 
-bool pyramid(GLFWwindow *window, int n)
+bool display(GLFWwindow *window, int n)
 {
     Shader myShader("./vector_shader.vs", "./fragment_shader.fs");
-    float tilt = M_PI / 4;
+    float tilt = -M_PI / 4;
+
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     while (not glfwWindowShouldClose(window))
     {
@@ -59,7 +61,7 @@ bool pyramid(GLFWwindow *window, int n)
 
         if (rotateShape)
         {
-            tilt += M_PI / 24;
+            tilt += M_PI / 30;
         }
 
         glClearColor(0.5569, 0.569, 0.56, 1.0);
@@ -76,33 +78,49 @@ bool pyramid(GLFWwindow *window, int n)
 
         if (prismOrPyramid)
         {
-            float vertices[12 * n];
-            for (int i = 0; i < 2 * n; ++i)
+            float vertices[12 * n + 12];
+            for (int i = 0; i < 2 * n + 2; ++i)
             {
-                vertices[6 * i + 0] = 0.5 * cosf(2 * M_PI * i / n);
-                vertices[6 * i + 1] = 0.5 * sinf(2 * M_PI * i / n);
-                vertices[6 * i + 2] = i < n ? 0.5 : -0.5;
-                vertices[6 * i + 3] = i < n ? 1.0 * i / n : 1 - 1.0 * (i - n) / n;
-                vertices[6 * i + 4] = 0;
-                vertices[6 * i + 5] = i < n ? 1.0 * i / n : 1 - 1.0 * (i - n) / n;
+                if (i == 0)
+                {
+                    vertices[0] = 0;
+                    vertices[1] = 0;
+                    vertices[2] = -0.5;
+                    vertices[3] = 0;
+                    vertices[4] = 0;
+                    vertices[5] = 0;
+                    continue;
+                }
+
+                if (i == 2 * n + 1)
+                {
+                    vertices[12 * n + 6 + 0] = 0;
+                    vertices[12 * n + 6 + 1] = 0;
+                    vertices[12 * n + 6 + 2] = 0.5;
+                    vertices[12 * n + 6 + 3] = 1;
+                    vertices[12 * n + 6 + 4] = 1;
+                    vertices[12 * n + 6 + 5] = 1;
+                    continue;
+                }
+
+                else
+                {
+                    vertices[6 * i + 0] = 0.4 * cos(2 * M_PI * ((i - 1) % n) / n);
+                    vertices[6 * i + 1] = 0.4 * sin(2 * M_PI * ((i - 1) % n) / n);
+                    vertices[6 * i + 2] = i <= n ? -0.5 : 0.5;
+                    vertices[6 * i + 3] = (i % (n + 1)) * 1.0 / (n + 1);
+                    vertices[6 * i + 4] = 0;
+                    vertices[6 * i + 5] = (i % (n + 1)) * 1.0 / (n + 1);
+                }
             }
 
-            unsigned int indices[6 * (n - 2)];
-            for (int i = 0; i < 2 * (n - 2); ++i)
+            unsigned int indices[6 * n];
+            for (int i = 0; i < 2 * n; ++i)
             {
-                indices[3 * i + 0] = i < n - 2 ? i + 2 : i + 4;
-                indices[3 * i + 1] = i < n - 2 ? i + 1 : i + 3;
-                indices[3 * i + 2] = i < n - 2 ? 0 : n;
+                indices[3 * i + 0] = i < n ? (i + 0) % n + 1 : n + (i + 0) % n + 1;
+                indices[3 * i + 1] = i < n ? (i + 1) % n + 1 : n + (i + 1) % n + 1;
+                indices[3 * i + 2] = i < n ? 0 : 2 * n + 1;
             }
-            // for (int i = 0; i < n - 1; ++i)
-            // {
-            //     indices[6 * (n - 2) + 6 * i + 0] = 0;
-            //     indices[6 * (n - 2) + 6 * i + 1] = 0;
-            //     indices[6 * (n - 2) + 6 * i + 2] = 0;
-            //     indices[6 * (n - 2) + 6 * i + 3] = 0;
-            //     indices[6 * (n - 2) + 6 * i + 4] = 0;
-            //     indices[6 * (n - 2) + 6 * i + 5] = 0;
-            // }
 
             glGenVertexArrays(1, &VAO);
             glGenBuffers(1, &VBO);
@@ -118,43 +136,47 @@ bool pyramid(GLFWwindow *window, int n)
         else
         {
             float vertices[6 * n + 6];
-            for (int i = 0; i < n; ++i)
+            for (int i = 0; i < 2 * n + 2; ++i)
             {
-                vertices[6 * i + 0] = 0.5 * cosf(2 * M_PI * i / n);
-                vertices[6 * i + 1] = 0.5 * sinf(2 * M_PI * i / n);
-                vertices[6 * i + 2] = 0.5;
-                vertices[6 * i + 3] = 1.0 * i / n;
-                vertices[6 * i + 4] = 0;
-                vertices[6 * i + 5] = 1.0 * i / n;
-            }
-            vertices[6 * n + 0] = 0;
-            vertices[6 * n + 1] = 0;
-            vertices[6 * n + 2] = -0.5;
-            vertices[6 * n + 3] = 1;
-            vertices[6 * n + 4] = 1;
-            vertices[6 * n + 5] = 1;
+                if (i == 0)
+                {
+                    vertices[0] = 0;
+                    vertices[1] = 0;
+                    vertices[2] = -0.5;
+                    vertices[3] = 0;
+                    vertices[4] = 0;
+                    vertices[5] = 0;
+                    continue;
+                }
 
-            unsigned int indices[3 * (n - 2) + 3 * n];
-            for (int i = 0; i < n - 2; ++i)
-            {
-                indices[3 * i + 0] = i + 2;
-                indices[3 * i + 1] = i + 1;
-                indices[3 * i + 2] = 0;
+                if (i == n + 1)
+                {
+                    vertices[6 * n + 6 + 0] = 0;
+                    vertices[6 * n + 6 + 1] = 0;
+                    vertices[6 * n + 6 + 2] = 0.5;
+                    vertices[6 * n + 6 + 3] = 1;
+                    vertices[6 * n + 6 + 4] = 1;
+                    vertices[6 * n + 6 + 5] = 1;
+                    continue;
+                }
+
+                else
+                {
+                    vertices[6 * i + 0] = 0.4 * cos(2 * M_PI * ((i - 1) % n) / n);
+                    vertices[6 * i + 1] = 0.4 * sin(2 * M_PI * ((i - 1) % n) / n);
+                    vertices[6 * i + 2] = -0.5;
+                    vertices[6 * i + 3] = (i % (n + 1)) * 1.0 / (n + 1);
+                    vertices[6 * i + 4] = 0;
+                    vertices[6 * i + 5] = (i % (n + 1)) * 1.0 / (n + 1);
+                }
             }
+
+            unsigned int indices[3 * n];
             for (int i = 0; i < n; ++i)
             {
-                // if (i != 1)
-                // {
-                //     indices[3 * (n - 2) + 3 * i + 0] = n;
-                //     indices[3 * (n - 2) + 3 * i + 1] = i;
-                //     indices[3 * (n - 2) + 3 * i + 2] = (i + 1) % n;
-                // }
-                // else
-                // {
-                //     indices[3 * (n - 2) + 3 * i + 0] = (i + 1) % n;
-                //     indices[3 * (n - 2) + 3 * i + 1] = i;
-                //     indices[3 * (n - 2) + 3 * i + 2] = n;
-                // }
+                indices[3 * i + 0] = (i + 0) % n + 1;
+                indices[3 * i + 1] = (i + 1) % n + 1;
+                indices[3 * i + 2] = 0;
             }
 
             glGenVertexArrays(1, &VAO);
@@ -216,7 +238,7 @@ int main(int argc, char **argv)
         return false;
     }
 
-    if (not pyramid(window, atoi(argv[1])))
+    if (not display(window, atoi(argv[1])))
     {
         return -1;
     }
