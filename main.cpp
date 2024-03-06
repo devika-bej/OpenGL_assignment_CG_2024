@@ -10,7 +10,6 @@
 #include <glm/gtc/type_ptr.hpp>
 
 bool prismOrPyramid = true;
-float objectTranslate[3] = {0, 0, 0};
 bool rotateShape = false;
 
 glm::mat4 modelMat = glm::mat4(1.0f);
@@ -108,7 +107,6 @@ void processInput(GLFWwindow *window)
 bool display(GLFWwindow *window, int n)
 {
     Shader myShader("./vector_shader.vs", "./fragment_shader.fs");
-    float tilt = 0;
 
     glEnable(GL_DEPTH_TEST);
 
@@ -117,11 +115,10 @@ bool display(GLFWwindow *window, int n)
         processInput(window);
         viewMat = glm::lookAt(cameraLoc, glm::vec3(0, 0, 0), upVec);
         projMat = glm::perspective(glm::radians(90.0f), (float)(WIDTH / HEIGHT), 0.1f, 100.0f);
-        // std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
         if (rotateShape)
         {
-            tilt += M_PI / 12;
+            modelMat = glm::rotate(modelMat, float(glm::radians(5.0f)), glm::vec3(0.0f, 1.0f, 0.0f));
         }
 
         glClearColor(0.5569, 0.569, 0.56, 1.0);
