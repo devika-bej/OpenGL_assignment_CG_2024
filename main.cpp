@@ -53,20 +53,21 @@ bool display(GLFWwindow *window, int n)
     float tilt = 0;
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    glPolygonMode(GL_FRONT, GL_FILL);
+
+    glEnable(GL_DEPTH_TEST);
 
     while (not glfwWindowShouldClose(window))
     {
-        // std::this_thread::sleep_for(std::chrono::milliseconds(100));
         processInput(window);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
         if (rotateShape)
         {
-            tilt += M_PI / 30;
+            tilt += M_PI / 12;
         }
 
         glClearColor(0.5569, 0.569, 0.56, 1.0);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         myShader.use();
 
@@ -191,8 +192,8 @@ bool display(GLFWwindow *window, int n)
             for (int i = 0; i < n; ++i)
             {
                 indices[3 * n + 3 * i + 0] = n + 1;
-                indices[3 * n + 3 * i + 1] = 1 + i % n;
-                indices[3 * n + 3 * i + 2] = i;
+                indices[3 * n + 3 * i + 1] = 1 + (i + 1) % n;
+                indices[3 * n + 3 * i + 2] = i + 1;
             }
 
             glGenVertexArrays(1, &VAO);
@@ -214,7 +215,7 @@ bool display(GLFWwindow *window, int n)
         glEnableVertexAttribArray(1);
 
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 24 * n, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, 48 * n, GL_UNSIGNED_INT, 0);
 
         glDeleteVertexArrays(1, &VAO);
         glDeleteBuffers(1, &VBO);
