@@ -15,6 +15,7 @@ bool rotateShape = false;
 glm::mat4 modelMat = glm::mat4(1.0f);
 glm::mat4 viewMat = glm::mat4(1.0f);
 glm::mat4 projMat = glm::mat4(1.0f);
+glm::mat4 rotMat = glm::mat4(1.0f);
 glm::vec3 cameraLoc = {0, 0, -5.0};
 glm::vec3 upVec = {0, 1, 0};
 glm::vec3 rightVec = {1, 0, 0};
@@ -118,7 +119,7 @@ bool display(GLFWwindow *window, int n)
 
         if (rotateShape)
         {
-            modelMat = glm::rotate(modelMat, float(glm::radians(5.0f)), glm::vec3(0.0f, 1.0f, 0.0f));
+            rotMat = glm::rotate(rotMat, float(glm::radians(5.0f)), glm::vec3(0.0f, 1.0f, 0.0f));
         }
 
         glClearColor(0.5569, 0.569, 0.56, 1.0);
@@ -132,6 +133,8 @@ bool display(GLFWwindow *window, int n)
         glUniformMatrix4fv(viewMatLoc, 1, GL_FALSE, glm::value_ptr(viewMat));
         int projMatLoc = glGetUniformLocation(myShader.id, "projMat");
         glUniformMatrix4fv(projMatLoc, 1, GL_FALSE, glm::value_ptr(projMat));
+        int rotMatLoc = glGetUniformLocation(myShader.id, "rotMat");
+        glUniformMatrix4fv(rotMatLoc, 1, GL_FALSE, glm::value_ptr(rotMat));
 
         unsigned int VBO, VAO, EBO;
 
