@@ -50,13 +50,14 @@ void processInput(GLFWwindow *window)
 bool display(GLFWwindow *window, int n)
 {
     Shader myShader("./vector_shader.vs", "./fragment_shader.fs");
-    float tilt = -M_PI / 4;
+    float tilt = 0;
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glPolygonMode(GL_FRONT, GL_FILL);
 
     while (not glfwWindowShouldClose(window))
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        // std::this_thread::sleep_for(std::chrono::milliseconds(100));
         processInput(window);
 
         if (rotateShape)
@@ -108,18 +109,27 @@ bool display(GLFWwindow *window, int n)
                     vertices[6 * i + 0] = 0.4 * cos(2 * M_PI * ((i - 1) % n) / n);
                     vertices[6 * i + 1] = 0.4 * sin(2 * M_PI * ((i - 1) % n) / n);
                     vertices[6 * i + 2] = i <= n ? -0.5 : 0.5;
-                    vertices[6 * i + 3] = (i % (n + 1)) * 1.0 / (n + 1);
+                    vertices[6 * i + 3] = (1 + i % n) * 1.0 / (n + 1);
                     vertices[6 * i + 4] = 0;
-                    vertices[6 * i + 5] = (i % (n + 1)) * 1.0 / (n + 1);
+                    vertices[6 * i + 5] = (1 + i % n) * 1.0 / (n + 1);
                 }
             }
 
-            unsigned int indices[6 * n];
+            unsigned int indices[6 * n + 6 * n];
             for (int i = 0; i < 2 * n; ++i)
             {
                 indices[3 * i + 0] = i < n ? (i + 0) % n + 1 : n + (i + 0) % n + 1;
                 indices[3 * i + 1] = i < n ? (i + 1) % n + 1 : n + (i + 1) % n + 1;
                 indices[3 * i + 2] = i < n ? 0 : 2 * n + 1;
+            }
+            for (int i = 1; i <= n; ++i)
+            {
+                indices[6 * n + 6 * (i - 1) + 0] = i;
+                indices[6 * n + 6 * (i - 1) + 1] = i + n;
+                indices[6 * n + 6 * (i - 1) + 2] = n + 1 + i % n;
+                indices[6 * n + 6 * (i - 1) + 3] = i;
+                indices[6 * n + 6 * (i - 1) + 4] = 1 + i % n;
+                indices[6 * n + 6 * (i - 1) + 5] = n + 1 + i % n;
             }
 
             glGenVertexArrays(1, &VAO);
@@ -135,8 +145,8 @@ bool display(GLFWwindow *window, int n)
         }
         else
         {
-            float vertices[6 * n + 6];
-            for (int i = 0; i < 2 * n + 2; ++i)
+            float vertices[6 * n + 12];
+            for (int i = 0; i < n + 2; ++i)
             {
                 if (i == 0)
                 {
@@ -165,18 +175,24 @@ bool display(GLFWwindow *window, int n)
                     vertices[6 * i + 0] = 0.4 * cos(2 * M_PI * ((i - 1) % n) / n);
                     vertices[6 * i + 1] = 0.4 * sin(2 * M_PI * ((i - 1) % n) / n);
                     vertices[6 * i + 2] = -0.5;
-                    vertices[6 * i + 3] = (i % (n + 1)) * 1.0 / (n + 1);
+                    vertices[6 * i + 3] = (1 + i % n) * 1.0 / (n + 1);
                     vertices[6 * i + 4] = 0;
-                    vertices[6 * i + 5] = (i % (n + 1)) * 1.0 / (n + 1);
+                    vertices[6 * i + 5] = (1 + i % n) * 1.0 / (n + 1);
                 }
             }
 
-            unsigned int indices[3 * n];
+            unsigned int indices[3 * n + 3 * n];
             for (int i = 0; i < n; ++i)
             {
                 indices[3 * i + 0] = (i + 0) % n + 1;
                 indices[3 * i + 1] = (i + 1) % n + 1;
                 indices[3 * i + 2] = 0;
+            }
+            for (int i = 0; i < n; ++i)
+            {
+                indices[3 * n + 3 * i + 0] = n + 1;
+                indices[3 * n + 3 * i + 1] = 1 + i % n;
+                indices[3 * n + 3 * i + 2] = i;
             }
 
             glGenVertexArrays(1, &VAO);
