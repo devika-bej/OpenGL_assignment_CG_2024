@@ -5,10 +5,20 @@
 #include <math.h>
 #include <chrono>
 #include <thread>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 bool prismOrPyramid = true;
 float objectTranslate[3] = {0, 0, 0};
 bool rotateShape = false;
+
+glm::mat4 modelMat = glm::mat4(1.0f);
+glm::mat4 viewMat = glm::mat4(1.0f);
+glm::mat4 projMat = glm::mat4(1.0f);
+glm::vec3 cameraLoc = {0, 0, -5.0};
+glm::vec3 upVec = {0, 1, 0};
+glm::vec3 rightVec = {1, 0, 0};
 
 const unsigned int WIDTH = 600;
 const unsigned int HEIGHT = 600;
@@ -28,19 +38,67 @@ void processInput(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
         prismOrPyramid = not prismOrPyramid;
 
-    // up (up key), down (down key), left (left key), right (right key), near (n key), far (f key)
+    // translate up (up key), down (down key), left (left key), right (right key), near (n key), far (f key)
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        objectTranslate[1] += 0.1;
+        modelMat = glm::translate(modelMat, 0.1f * upVec);
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-        objectTranslate[1] -= 0.1;
+        modelMat = glm::translate(modelMat, -0.1f * upVec);
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-        objectTranslate[0] -= 0.1;
+    {
+        glm::vec3 look = glm::vec3(0.0f, 0.0f, 0.0f) - cameraLoc;
+        modelMat = glm::translate(modelMat, 0.1f * glm::normalize(glm::cross(upVec, look)));
+    }
     if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-        objectTranslate[0] += 0.1;
+    {
+        glm::vec3 look = glm::vec3(0.0f, 0.0f, 0.0f) - cameraLoc;
+        modelMat = glm::translate(modelMat, -0.1f * glm::normalize(glm::cross(upVec, look)));
+    }
     if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS)
-        objectTranslate[2] += 0.1;
+    {
+        glm::vec3 look = glm::normalize(glm::vec3(0.0f, 0.0f, 0.0f) - cameraLoc);
+        modelMat = glm::translate(modelMat, -0.1f * look);
+    }
     if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
-        objectTranslate[2] -= 0.1;
+    {
+        glm::vec3 look = glm::normalize(glm::vec3(0.0f, 0.0f, 0.0f) - cameraLoc);
+        modelMat = glm::translate(modelMat, 0.1f * look);
+    }
+
+    // camera move up (q key), down (e key), left (a key), right (d key), near (w key), far (s key)
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+    {
+        cameraLoc = cameraLoc + 0.1f * upVec;
+        glm::vec3 look = glm::normalize(glm::vec3(0.0f, 0.0f, 0.0f) - cameraLoc);
+        upVec = glm::normalize(glm::cross(rightVec, look));
+    }
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+    {
+        cameraLoc = cameraLoc - 0.1f * upVec;
+        glm::vec3 look = glm::normalize(glm::vec3(0.0f, 0.0f, 0.0f) - cameraLoc);
+        upVec = glm::normalize(glm::cross(rightVec, look));
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    {
+        cameraLoc = cameraLoc - 0.1f * rightVec;
+        glm::vec3 look = glm::normalize(glm::vec3(0.0f, 0.0f, 0.0f) - cameraLoc);
+        rightVec = glm::normalize(glm::cross(look, upVec));
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    {
+        cameraLoc = cameraLoc + 0.1f * rightVec;
+        glm::vec3 look = glm::normalize(glm::vec3(0.0f, 0.0f, 0.0f) - cameraLoc);
+        rightVec = glm::normalize(glm::cross(look, upVec));
+    }
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        glm::vec3 look = glm::normalize(glm::vec3(0.0f, 0.0f, 0.0f) - cameraLoc);
+        cameraLoc = cameraLoc + 0.1f * look;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        glm::vec3 look = glm::normalize(glm::vec3(0.0f, 0.0f, 0.0f) - cameraLoc);
+        cameraLoc = cameraLoc - 0.1f * look;
+    }
 
     // rotate about y axis
     if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
@@ -52,14 +110,14 @@ bool display(GLFWwindow *window, int n)
     Shader myShader("./vector_shader.vs", "./fragment_shader.fs");
     float tilt = 0;
 
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
     glEnable(GL_DEPTH_TEST);
 
     while (not glfwWindowShouldClose(window))
     {
         processInput(window);
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        viewMat = glm::lookAt(cameraLoc, glm::vec3(0, 0, 0), upVec);
+        projMat = glm::perspective(glm::radians(90.0f), (float)(WIDTH / HEIGHT), 0.1f, 100.0f);
+        // std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
         if (rotateShape)
         {
@@ -71,10 +129,12 @@ bool display(GLFWwindow *window, int n)
 
         myShader.use();
 
-        int translationVecLoc = glGetUniformLocation(myShader.id, "objectTranslate");
-        glUniform3f(translationVecLoc, objectTranslate[0], objectTranslate[1], objectTranslate[2]);
-        int tiltLoc = glGetUniformLocation(myShader.id, "tilt");
-        glUniform1i(tiltLoc, tilt);
+        int modelMatLoc = glGetUniformLocation(myShader.id, "modelMat");
+        glUniformMatrix4fv(modelMatLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
+        int viewMatLoc = glGetUniformLocation(myShader.id, "viewMat");
+        glUniformMatrix4fv(viewMatLoc, 1, GL_FALSE, glm::value_ptr(viewMat));
+        int projMatLoc = glGetUniformLocation(myShader.id, "projMat");
+        glUniformMatrix4fv(projMatLoc, 1, GL_FALSE, glm::value_ptr(projMat));
 
         unsigned int VBO, VAO, EBO;
 
