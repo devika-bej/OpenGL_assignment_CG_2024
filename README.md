@@ -16,7 +16,6 @@ Arrow keys: Move shape in that direction
 `esc` : Close the window
 
 # Running the code
-After downloading the code:  
-`cd opengl_assignment`  
+After downloading the code, open the terminal in the code directory and run the following command:  
 `g++ main.cpp -o test glad.o -lGL -lglfw && ./test n`  
 Replace n with the number of sides you want the shape to have
